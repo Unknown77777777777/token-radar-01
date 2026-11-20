@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Token Radar — pre-token protocols ranked by implied value</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="masthead">
+  <div class="masthead-inner">
+    <div>
+      <h1>Token Radar</h1>
+      <p class="subtitle">Pre-token protocols ranked by implied launch value — which launch is worth farming next, and what to do about it.</p>
+    </div>
+    <div class="meta" id="meta"></div>
+  </div>
+  <nav class="tabs" aria-label="Views">
+    <button type="button" class="tab active" data-tab="board" id="tab-board">Board</button>
+    <button type="button" class="tab" data-tab="live" id="tab-live">Live tokens</button>
+    <button type="button" class="tab" data-tab="model" id="tab-model">Model</button>
+  </nav>
+</header>
+
+<main>
+  <section id="view-board" class="view">
+    <div class="controls" role="search">
+      <label class="ctl">Search
+        <input type="search" id="q" placeholder="name, slug or category" autocomplete="off">
+      </label>
+      <label class="ctl">Category
+        <select id="f-category"><option value="">All categories</option></select>
+      </label>
+      <label class="ctl">Chain
+        <select id="f-chain"><option value="">All chains</option></select>
+      </label>
+      <label class="ctl check"><input type="checkbox" id="f-watchlist"> Watchlist only</label>
+      <label class="ctl">Min TVL ($)
+        <input type="number" id="f-mintvl" min="0" step="1000000" placeholder="0">
+      </label>
+      <button type="button" id="reset" class="btn">Reset</button>
+    </div>
+    <p class="resultline" id="resultline"></p>
+    <div class="tablewrap">
+      <table id="board">
+        <thead>
+          <tr>
+            <th data-sort="rank" class="sortable" scope="col">Rank</th>
+            <th data-sort="name" class="sortable" scope="col">Protocol</th>
+            <th data-sort="tvl_usd" class="sortable num" scope="col">TVL</th>
+            <th data-sort="change_7d" class="sortable num" scope="col">7d %</th>
+            <th data-sort="age_days" class="sortable num" scope="col">Age</th>
+            <th data-sort="implied_value_usd" class="sortable num" scope="col">Implied value</th>
+            <th scope="col">Model</th>
+          </tr>
+        </thead>
+        <tbody id="board-body"></tbody>
+      </table>
+    </div>
+    <p class="hint">Click a row to open its detail view: model breakdown and the 6-step farm plan.</p>
+  </section>
+
+  <section id="view-detail" class="view" hidden>
+    <button type="button" id="back" class="btn">&larr; Back to the board</button>
+    <div id="detail"></div>
+  </section>
+
+  <section id="view-live" class="view" hidden>
+    <h2>Live tokens</h2>
+    <p class="note">The 24 protocols that record a token, by market cap. These are <strong>market values, not model values</strong> — the market's own numbers, shown beside the board and never mixed into its ranking.</p>
+    <div class="tablewrap">
+      <table id="livetable">
+        <thead>
+          <tr>
+            <th scope="col">#</th>
+            <th scope="col">Protocol</th>
+            <th scope="col" class="num">TVL</th>
+            <th scope="col" class="num">7d %</th>
+            <th scope="col" class="num">Market cap</th>
+            <th scope="col">Token</th>
+          </tr>
+        </thead>
+        <tbody id="live-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="view-model" class="view" hidden>
+    <h2>The model — radar-2</h2>
+    <p>Every row is scored by the same function, from the snapshot's own figures only. No protocol name is ever special-cased.</p>
+    <p class="formula">implied value = max(1, round(TVL &times; 0.25 &times; growth multiplier &times; maturity multiplier &times; reach multiplier))</p>
+    <table class="consts">
+      <thead><tr><th scope="col">Constant</th><th scope="col">Value</th><th scope="col">Meaning</th></tr></thead>
+      <tbody>
+        <tr><td>base_multiple</td><td>0.25</td><td>Base is a quarter of TVL.</td></tr>
+        <tr><td>growth_weight</td><td>0.6</td><td>Each point of 7-day growth moves the multiplier by 0.6 points.</td></tr>
+        <tr><td>growth_floor / growth_cap</td><td>-60 / 150</td><td>7-day change is clamped before it is used.</td></tr>
+        <tr><td>maturity_floor / maturity_range</td><td>0.5 / 0.5</td><td>A brand-new listing starts at half strength and earns the rest with age.</td></tr>
+        <tr><td>maturity_days</td><td>1095</td><td>Full maturity at three years listed.</td></tr>
+        <tr><td>unknown_age_days</td><td>365</td><td>Age assumed when no listing date is recorded.</td></tr>
+        <tr><td>reach_per_chain / reach_max_chains</td><td>0.02 / 5</td><td>Each chain adds 2%, up to five chains.</td></tr>
+      </tbody>
+    </table>
+    <h3>What counts as a launch</h3>
+    <p>A protocol is on the board when it <strong>records no token</strong> — market cap, CoinGecko id and symbol are all absent from its record — and it is launchable. Excluded, even when they record no token:</p>
+    <ul>
+      <li>Bridge, Canonical Bridge, Liquid Staking, Liquid Restaking, Restaked BTC and CEX categories.</li>
+      <li>Names carrying a whole word <em>wrapped</em>, <em>staked</em> or <em>staking</em>.</li>
+      <li>Names beginning with an exchange name (Binance, Coinbase, Bybit, Kraken, Bitget, OKX, Bitfinex, Gemini).</li>
+      <li>Names ending in a version marker such as V2, v2 or 2.0.</li>
+    </ul>
+    <p>Wrapped, staked, bridged and exchange products are not launches waiting to happen: they are versions of tokens that already trade. The board ranks the whole launchable set — 198 rows on this snapshot — never a top-N cut.</p>
+    <h3>A note on wording</h3>
+    <p>This radar says a protocol “records no token”, never that it “has no token”: the snapshot is a record, and absence from the record is all the radar can claim.</p>
+  </section>
+</main>
+
+<footer>
+  <p>Token Radar · model radar-2 · data: DefiLlama snapshot · Implied value is this entry's own claim. It does not predict whether or when a token is issued.</p>
+</footer>
+
+<script src="../data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
